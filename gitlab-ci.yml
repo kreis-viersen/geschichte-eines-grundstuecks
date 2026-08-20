@@ -1,0 +1,16 @@
+default:
+  image: node:24
+
+stages:
+  - deploy
+
+deploy-pages:
+  stage: deploy
+  script:
+    - npm ci
+    - npm run build
+    - test -s dist/index.html
+  pages:
+    publish: dist
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
