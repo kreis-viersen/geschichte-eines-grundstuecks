@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Karten, Luftbilder und Katasterinformationen im Wandel der Zeit für Nordrhein-Westfalen.">
+  <title>Die Geschichte eines Grundstücks</title>
+</head>
+<body data-app-mode="simple">
+  <div id="app">
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="img">
+          <path d="M8 9h32v30H8z" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 29l10-9 7 6 7-11 8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="17" cy="16" r="3" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <h1>Die Geschichte eines Grundstücks</h1>
+        <p>Karten, Luftbilder und Katasterinformationen im Wandel der Zeit</p>
+      </div>
+      <div class="mode-control">
+        <span class="mode-control-label">Modus</span>
+        <div class="mode-switch" role="group" aria-label="Anwendungsmodus">
+          <button id="simpleModeButton" class="mode-button" type="button" aria-pressed="true">Einfach</button>
+          <button id="advancedModeButton" class="mode-button" type="button" aria-pressed="false">Erweitert</button>
+        </div>
+      </div>
+      <div id="geocoderContainer" class="geocoder-container" hidden aria-label="Adresssuche in Nordrhein-Westfalen"></div>
+      <button id="aboutButton" class="icon-button header-action" type="button" title="Über diese Anwendung" aria-label="Über diese Anwendung">i</button>
+    </header>
+
+    <main>
+      <div id="map" aria-label="Interaktive Karte von Nordrhein-Westfalen"></div>
+
+      <div id="printFrame" class="print-frame" hidden aria-label="Sichtbarer PDF-Ausschnitt im Format A4 quer">
+        <span>A4 quer · PDF-Ausschnitt</span>
+      </div>
+
+      <section id="introCard" class="map-card intro-card">
+        <strong>PDF erstellen</strong>
+        <span>Adresse suchen oder Karte verschieben/zoomen. Anschließend innerhalb der NRW-Grenze auf den gewünschten Punkt klicken und die automatisch ermittelten Seiten bestätigen.</span>
+      </section>
+
+
+      <section id="availabilityStatus" class="availability-status map-card" hidden aria-label="Verfügbarkeit am Mauszeiger">
+        <p class="eyebrow">Am Mauszeiger</p>
+        <strong>Verfügbare Angebote</strong>
+        <ul id="availabilityList">
+          <li class="availability-empty">Maus über die Karte bewegen</li>
+        </ul>
+      </section>
+
+      <aside id="resultsPanel" class="side-panel" aria-label="Luftbildauswahl" hidden>
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Gefundene Aufnahmen</p>
+            <h2 id="resultTitle">Luftbilder auswählen</h2>
+            <p id="coordinateText" class="muted"></p>
+          </div>
+          <button id="closeResultsButton" class="icon-button" type="button" aria-label="Auswahl schließen">×</button>
+        </div>
+
+        <div id="loadingState" class="loading-state" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <div>
+            <strong>NRW-Dienste werden abgefragt</strong>
+            <p id="loadingDetail" class="muted">Bitte einen Moment.</p>
+          </div>
+        </div>
+
+        <div id="emptyState" class="message-state" hidden>
+          <strong>Keine Luftbilder gefunden</strong>
+          <p>An dieser Position lieferten die abgefragten Dienste keine Bildflugtermine.</p>
+        </div>
+
+        <div id="errorState" class="message-state error-state" hidden>
+          <strong>Abfrage nicht vollständig</strong>
+          <p id="errorText"></p>
+        </div>
+
+        <div id="selectionContent" hidden>
+          <div id="aerialSelectionControls">
+            <fieldset class="sort-group">
+              <legend>Sortierung</legend>
+              <label><input type="radio" name="sortOrder" value="desc" checked> neueste zuerst</label>
+              <label><input type="radio" name="sortOrder" value="asc"> älteste zuerst</label>
+            </fieldset>
+
+            <div class="bulk-actions" aria-label="Luftbildauswahl bearbeiten">
+              <button id="selectAllButton" type="button">Alle auswählen</button>
+              <button id="selectNoneButton" type="button">Auswahl aufheben</button>
+              <button id="invertSelectionButton" type="button">Auswahl umkehren</button>
+            </div>
+
+            <div id="dateList" class="date-list"></div>
+          </div>
+
+          <label class="metadata-option">
+            <input id="metadataCheckbox" type="checkbox">
+            <span>
+              <strong>Luftbild-Metadatenlayer anzeigen</strong>
+              <small>Je Luftbilddienst als zunächst ausgeblendeter WMS-Layer</small>
+            </span>
+          </label>
+
+          <section id="additionalMapsSection" class="additional-maps-section" hidden>
+            <p class="eyebrow">Weitere Karten</p>
+            <div id="additionalMapsList" class="additional-maps-list"></div>
+          </section>
+
+          <div class="panel-footer">
+            <span id="selectionCount" class="muted"></span>
+            <button id="addLayersButton" class="primary-button" type="button">Auswahl anzeigen</button>
+          </div>
+        </div>
+      </aside>
+
+      <aside id="layersPanel" class="layers-panel" aria-label="Geladene Luftbildlayer" hidden>
+        <div class="layers-heading">
+          <div>
+            <p class="eyebrow">Karteninhalt</p>
+            <h2>Geladene Luftbilder und Karten</h2>
+          </div>
+          <button id="removeAllLayersButton" class="text-button danger" type="button">Alle entfernen</button>
+        </div>
+        <div id="layerList" class="layer-list"></div>
+        <div class="pdf-export-panel">
+          <div>
+            <strong>Mehrseitige PDF</strong>
+            <small>A4 quer · ein Thema je Seite.</small>
+          </div>
+          <label class="pdf-point-option">
+            <input id="includePointPdfCheckbox" type="checkbox" checked>
+            <span>
+              <strong>Auswahlpunkt in PDF einzeichnen</strong>
+              <small>Mit Punkt: Bildflugdatum · ohne Punkt: Jahr.</small>
+            </span>
+          </label>
+          <fieldset class="pdf-scale-options">
+            <legend>Maßstab der Kartenwerke</legend>
+            <label class="pdf-scale-choice">
+              <input id="advancedPdfScaleView" type="radio" name="advancedPdfScaleMode" value="view" checked>
+              <span><strong>Wie in der Kartenansicht</strong></span>
+            </label>
+            <label class="pdf-scale-choice">
+              <input id="advancedPdfScaleRecommended" type="radio" name="advancedPdfScaleMode" value="recommended">
+              <span>
+                <strong>Empfohlene Maßstäbe verwenden</strong>
+                <small>Feste Maßstäbe, um den Auswahlpunkt zentriert. Luftbilder bleiben im A4-Ausschnitt.</small>
+              </span>
+            </label>
+          </fieldset>
+          <button id="exportPdfButton" class="primary-button export-button" type="button" disabled>Alle Karten als PDF</button>
+          <button id="exportQlrButton" class="secondary-button export-button" type="button" disabled>Für QGIS herunterladen (.qlr)</button>
+          <button id="copyPermalinkButton" class="secondary-button export-button" type="button" disabled>Permalink kopieren</button>
+          <p id="exportStatus" class="muted export-status"></p>
+        </div>
+      </aside>
+
+      <section id="autoPrintStatusPanel" class="auto-print-status map-card" role="status" aria-live="polite" hidden>
+        <div class="auto-print-status-heading">
+          <span id="autoPrintStatusSpinner" class="spinner" aria-hidden="true"></span>
+          <div>
+            <strong id="autoPrintStatusTitle">PDF wird vorbereitet</strong>
+            <p id="autoPrintStatusText" class="muted">Verfügbare Inhalte werden ermittelt.</p>
+          </div>
+        </div>
+        <progress id="autoPrintProgress" max="1" value="0"></progress>
+      </section>
+
+      <div id="toast" class="toast" role="status" hidden></div>
+    </main>
+  </div>
+
+
+  <dialog id="simpleExportDialog" class="simple-export-dialog">
+    <form method="dialog">
+      <button id="closeSimpleExportButton" class="icon-button dialog-close" type="submit" value="cancel" aria-label="Dialog schließen">×</button>
+
+      <div class="simple-dialog-scroll">
+        <p class="eyebrow">Einfacher Modus</p>
+        <h2 id="simpleExportTitle" tabindex="-1">PDF am Auswahlpunkt erstellen</h2>
+        <p id="simpleCoordinateText" class="muted"></p>
+
+        <section id="simpleShareSection" class="simple-share-section" aria-label="Links zu dieser Position">
+          <p class="eyebrow">Position teilen</p>
+          <p class="muted simple-share-intro">Die Links setzen beim Öffnen genau diesen Auswahlpunkt.</p>
+          <label class="simple-share-row">
+            <span>Mit Dialog</span>
+            <span class="simple-share-control">
+              <input id="simpleShareDialogUrl" type="text" readonly aria-label="Link mit Druckdialog">
+              <button id="copySimpleShareDialogButton" class="secondary-button compact-button" type="button">Kopieren</button>
+            </span>
+          </label>
+          <label class="simple-share-row">
+            <span>Direkter PDF-Export</span>
+            <span class="simple-share-control">
+              <input id="simpleShareAutoUrl" type="text" readonly aria-label="Link mit automatischem PDF-Export">
+              <button id="copySimpleShareAutoButton" class="secondary-button compact-button" type="button">Kopieren</button>
+            </span>
+          </label>
+        </section>
+
+        <div id="simpleLoadingState" class="loading-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <div>
+            <strong>Verfügbare Luftbilder und Karten werden ermittelt</strong>
+            <p class="muted">Die fünf Luftbilddienste werden parallel abgefragt.</p>
+          </div>
+        </div>
+
+        <div id="simpleErrorState" class="message-state error-state" hidden>
+          <strong>Abfrage nicht vollständig</strong>
+          <p id="simpleErrorText"></p>
+        </div>
+
+        <div id="simpleEmptyState" class="message-state" hidden>
+          <strong>Keine Inhalte gefunden</strong>
+          <p>An diesem Punkt wurden keine exportierbaren Luftbilder oder Karten gefunden.</p>
+        </div>
+
+        <div id="simpleExportContent" class="simple-export-content" hidden>
+          <p class="simple-dialog-intro">Die PDF enthält alle am Klickpunkt verfügbaren Inhalte. Der Ausschnitt wird je Kartentyp automatisch auf den vorgesehenen Maßstab zentriert.</p>
+          <ol id="simplePageList" class="simple-page-list"></ol>
+        </div>
+      </div>
+
+      <div id="simpleExportFooter" class="simple-dialog-footer" hidden>
+        <label class="pdf-point-option simple-point-option">
+          <input id="simpleIncludePointCheckbox" type="checkbox" checked>
+          <span>
+            <strong>Auswahlpunkt in PDF einzeichnen</strong>
+            <small>Bei Luftbildern wird dann das vollständige Bildflugdatum am markierten Punkt angegeben.</small>
+          </span>
+        </label>
+
+        <div class="simple-dialog-actions">
+          <button type="submit" value="cancel" class="secondary-button">Abbrechen</button>
+          <button id="simpleExportButton" type="button" class="primary-button">PDF erstellen</button>
+        </div>
+        <p id="simpleExportStatus" class="muted export-status"></p>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="aboutDialog" class="about-dialog">
+    <form method="dialog">
+      <button class="icon-button dialog-close" aria-label="Dialog schließen">×</button>
+      <p class="eyebrow">Über</p>
+      <h2>Die Geschichte eines Grundstücks</h2>
+      <p><em>Karten, Luftbilder und Katasterinformationen im Wandel der Zeit</em></p>
+      <p>Die Webanwendung basiert auf der Funktionsidee des QGIS-Plugins <a href="https://plugins.qgis.org/plugins/luftbildfinder-nrw/">„Luftbildfinder NRW“</a> des Kreises Viersen und wurde zu einer eigenständigen MapLibre-Anwendung mit historischen und aktuellen Kartenwerken, Luftbildern und Katasterinformationen weiterentwickelt. Der einfache Modus erzeugt nach einem Kartenklick eine automatisch zusammengestellte PDF; der erweiterte Modus bietet die vollständige Layer- und Ausschnittsteuerung sowie den Export der geladenen Themen als QGIS-Layerdefinition (.qlr).</p>
+      <p>Sie fragt historische DOP, historische iDOP, aktuelle DOP, iDOP und vDOP von Geobasis NRW ab. Zusätzlich bindet sie historische Kartenwerke und weitere WMS von Geobasis NRW, dem KRZN und dem Kreis Viersen ein.</p>
+      <dl>
+        <div><dt>Quellcodebasis</dt><dd>Kreis Viersen, GPL-3.0-or-later</dd></div>
+        <div><dt>Geodaten</dt><dd>Datenlizenz Deutschland – Zero – Version 2.0</dd></div>
+        <div><dt>Hintergrundkarte</dt><dd><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap-Mitwirkende · ODbL</a></dd></div>
+        <div><dt>Adresssuche</dt><dd>Photon von komoot auf Basis von OpenStreetMap, Suchbereich Nordrhein-Westfalen</dd></div>
+        <div><dt>NRW-Grenze</dt><dd>Lokales GeoJSON-Asset auf Basis DVG1 NRW</dd></div>
+        <div><dt>Maßstab</dt><dd>Einfacher Modus mit festen Zielmaßstäben; im erweiterten Modus wahlweise sichtbarer A4-Ausschnitt oder empfohlene Maßstäbe für Kartenwerke und OSM. Luftbilder behalten dort den sichtbaren A4-Ausschnitt. Jede PDF-Seite enthält einen grafischen Maßstabsbalken.</dd></div>
+        <div><dt>PDF-Export</dt><dd>A4 quer; Download über die normale Browserfunktion und automatischer URL-Export mit sichtbarer Fortschrittsanzeige</dd></div>
+      </dl>
+      <p>Fragen, Anmerkungen, Fehlermeldungen etc. können gerne per E-Mail an <a href="mailto:open@kreis-viersen.de">open@kreis-viersen.de</a> mitgeteilt werden.</p>
+    </form>
+  </dialog>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

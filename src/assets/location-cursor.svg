@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+  <defs>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="1" stdDeviation="0.8" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="1" y="7.5" width="20" height="7" rx="2.5" fill="#ffffff"/>
+    <rect x="7.5" y="1" width="7" height="20" rx="2.5" fill="#ffffff"/>
+    <rect x="2.5" y="9" width="17" height="4" rx="1.5" fill="#d62525"/>
+    <rect x="9" y="2.5" width="4" height="17" rx="1.5" fill="#d62525"/>
+  </g>
+</svg>

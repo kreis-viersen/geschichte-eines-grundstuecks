@@ -1,0 +1,33 @@
+{
+  "name": "geschichte-eines-grundstuecks-nrw",
+  "version": "2.2.50",
+  "private": true,
+  "type": "module",
+  "description": "Die Geschichte eines Grundstücks – Karten, Luftbilder und Katasterinformationen im Wandel der Zeit für Nordrhein-Westfalen.",
+  "scripts": {
+    "dev": "vite",
+    "check": "node --check src/app.js && node --check vite.config.js && node --check license-policy.mjs",
+    "prebuild": "npm run check",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "license": "GPL-3.0-or-later",
+  "allowScripts": {
+    "core-js": false
+  },
+  "dependencies": {
+    "@turf/boolean-point-in-polygon": "7.3.5",
+    "jspdf": "4.2.1",
+    "pdf-lib": "1.17.1",
+    "maplibre-gl": "6.1.0",
+    "proj4": "2.21.0",
+    "@maplibre/maplibre-gl-geocoder": "1.9.4"
+  },
+  "devDependencies": {
+    "rollup-license-plugin": "3.2.1",
+    "vite": "8.2.0"
+  }
+}
