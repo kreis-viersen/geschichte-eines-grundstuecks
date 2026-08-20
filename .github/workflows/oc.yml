@@ -1,5 +1,8 @@
 name: oc
 
+permissions:
+  contents: read
+  
 on:
   - push
   - delete
