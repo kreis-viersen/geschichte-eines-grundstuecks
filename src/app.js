@@ -248,7 +248,7 @@ const supplementalMapServices = [
     coverage: COVERAGE_KREIS_VIERSEN,
     sortYear: 9999,
     minZoom: 14,
-    attribution: 'KRZN ,
+    attribution: 'KRZN' ,
     pdfAttribution: 'KRZN · Datenlizenz Deutschland – Zero – Version 2.0'
   },
   {
