@@ -18,4 +18,5 @@ jobs:
       - name: Configure Git and Sync to GitLab
         run: |
           git remote add gitlab https://oauth2:${{ secrets.TARGET_TOKEN }}@${{ secrets.TARGET_URL }}
-          git push gitlab HEAD:main
+          git fetch gitlab
+          git push gitlab HEAD:main --force-with-lease
