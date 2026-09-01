@@ -16,6 +16,8 @@ const PRINT_PIXEL_HEIGHT = 1750;
 const EARTH_RADIUS_METERS = 6_371_008.8;
 const NRW_BOUNDARY_ASSET_URL = `${import.meta.env.BASE_URL}assets/nrw.geojson`;
 const KREIS_VIERSEN_COVERAGE_ASSET_URL = `${import.meta.env.BASE_URL}assets/coverage/kreis-viersen.geojson`;
+const URAUFNAHME_COVERAGE_ASSET_URL = `${import.meta.env.BASE_URL}assets/coverage/uraufnahme.geojson`;
+const TRANCHOT_COVERAGE_ASSET_URL = `${import.meta.env.BASE_URL}assets/coverage/tranchot.geojson`;
 const KREIS_VIERSEN_TIMELINE_ASSET_URL = `${import.meta.env.BASE_URL}assets/pdf/kreis-viersen-zeitstrahl.png`;
 const KREIS_VIERSEN_URGEMARKUNGEN_PDF_URL = `${import.meta.env.BASE_URL}assets/pdf/kreis-viersen-urgemarkungen.pdf`;
 const GEOBASIS_NRW_CURRENT_AERIAL_INFO_URL = 'https://www.bezreg-koeln.nrw.de/geobasis-nrw/produkte-und-dienste/luftbild-und-satellitenbildinformationen/aktuelle-luftbild-und';
@@ -35,6 +37,8 @@ const KREIS_VIERSEN_HISTORICAL_TRACE_URL = 'https://www.kreis-viersen.de/service
 const WMS_BASE_URL = 'https://www.wms.nrw.de/geobasis';
 const COVERAGE_NRW = 'nrw';
 const COVERAGE_KREIS_VIERSEN = 'kreis-viersen';
+const COVERAGE_URAUFNAHME = 'uraufnahme';
+const COVERAGE_TRANCHOT = 'tranchot';
 const NRW_BOUNDARY_SOURCE_ID = 'nrw-boundary-source';
 const NRW_BOUNDARY_CASING_LAYER_ID = 'nrw-boundary-casing';
 const NRW_BOUNDARY_LINE_LAYER_ID = 'nrw-boundary-line';
@@ -213,7 +217,7 @@ const supplementalMapServices = [
     hoverDetail: 'Kartenaufnahme der Rheinlande 1801–1828',
     pdfTitle: 'Tranchot / v. Müffling',
     pdfSubtitle: 'Kartenaufnahme der Rheinlande 1801–1828',
-    coverage: COVERAGE_KREIS_VIERSEN,
+    coverage: COVERAGE_TRANCHOT,
     sortYear: 1828,
     minZoom: 10.7,
     attribution: 'Geobasis NRW',
@@ -229,7 +233,7 @@ const supplementalMapServices = [
     hoverDetail: 'Preußische Kartenaufnahme 1836–1850',
     pdfTitle: 'Preußische Uraufnahme',
     pdfSubtitle: 'Preußische Kartenaufnahme 1:25.000 · 1836–1850',
-    coverage: COVERAGE_KREIS_VIERSEN,
+    coverage: COVERAGE_URAUFNAHME,
     sortYear: 1850,
     minZoom: 10.7,
     attribution: 'Geobasis NRW',
@@ -374,8 +378,15 @@ function sortSupplementalMapsByYearDescending(items) {
   return [...items].sort(compareSupplementalMapsByYearDescending);
 }
 
-function isSupplementalServiceAvailableAtPoint(service, insideKreisViersen) {
+function isSupplementalServiceAvailableAtPoint(
+  service,
+  insideKreisViersen,
+  insideUraufnahme = false,
+  insideTranchot = false
+) {
   if (service.coverage === COVERAGE_KREIS_VIERSEN) return insideKreisViersen;
+  if (service.coverage === COVERAGE_URAUFNAHME) return insideUraufnahme;
+  if (service.coverage === COVERAGE_TRANCHOT) return insideTranchot;
   if (service.coverage === COVERAGE_NRW && service.excludeKreisViersen) return !insideKreisViersen;
   return service.coverage === COVERAGE_NRW;
 }
@@ -547,6 +558,12 @@ const state = {
   kreisViersenCoverageFeature: null,
   kreisViersenCoveragePromise: null,
   kreisViersenCoverageError: null,
+  uraufnahmeCoverageFeature: null,
+  uraufnahmeCoveragePromise: null,
+  uraufnahmeCoverageError: null,
+  tranchotCoverageFeature: null,
+  tranchotCoveragePromise: null,
+  tranchotCoverageError: null,
   availableSupplementalMapIds: new Set(),
   selectedSupplementalMapIds: new Set(),
   availabilityStatusKey: null,
@@ -688,6 +705,20 @@ map.on('load', async () => {
   } catch (error) {
     console.error('Kreis-Viersen-Abdeckung konnte nicht geladen werden:', error);
     showToast('Die Abdeckung des Kreises Viersen konnte nicht geladen werden.');
+  }
+
+  try {
+    await ensureUraufnahmeCoverageLoaded();
+  } catch (error) {
+    console.error('Abdeckung der Preußischen Uraufnahme konnte nicht geladen werden:', error);
+    showToast('Die Abdeckung der Preußischen Uraufnahme konnte nicht geladen werden.');
+  }
+
+  try {
+    await ensureTranchotCoverageLoaded();
+  } catch (error) {
+    console.error('Abdeckung Tranchot / v. Müffling konnte nicht geladen werden:', error);
+    showToast('Die Abdeckung von Tranchot / v. Müffling konnte nicht geladen werden.');
   }
 
   if (startupPermalink) await runStartupPermalinkAction();
@@ -1064,6 +1095,81 @@ async function ensureKreisViersenCoverageLoaded() {
   return state.kreisViersenCoveragePromise;
 }
 
+async function ensureUraufnahmeCoverageLoaded() {
+  if (state.uraufnahmeCoverageFeature) return state.uraufnahmeCoverageFeature;
+  if (state.uraufnahmeCoverageError) throw state.uraufnahmeCoverageError;
+
+  if (!state.uraufnahmeCoveragePromise) {
+    state.uraufnahmeCoveragePromise = fetch(URAUFNAHME_COVERAGE_ASSET_URL, {
+      headers: { Accept: 'application/geo+json,application/json' }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} beim Laden von ${URAUFNAHME_COVERAGE_ASSET_URL}`);
+        }
+        return response.json();
+      })
+      .then(geojson => {
+        const feature = geojson?.type === 'FeatureCollection'
+          ? geojson.features?.find(item => ['Polygon', 'MultiPolygon'].includes(item?.geometry?.type))
+          : geojson?.type === 'Feature'
+            ? geojson
+            : null;
+
+        if (!feature || !['Polygon', 'MultiPolygon'].includes(feature.geometry?.type)) {
+          throw new Error('Das Uraufnahme-Coverage-Asset enthält keine Polygon- oder MultiPolygon-Fläche.');
+        }
+
+        state.uraufnahmeCoverageFeature = feature;
+        return feature;
+      })
+      .catch(error => {
+        state.uraufnahmeCoverageError = error;
+        throw error;
+      });
+  }
+
+  return state.uraufnahmeCoveragePromise;
+}
+
+
+async function ensureTranchotCoverageLoaded() {
+  if (state.tranchotCoverageFeature) return state.tranchotCoverageFeature;
+  if (state.tranchotCoverageError) throw state.tranchotCoverageError;
+
+  if (!state.tranchotCoveragePromise) {
+    state.tranchotCoveragePromise = fetch(TRANCHOT_COVERAGE_ASSET_URL, {
+      headers: { Accept: 'application/geo+json,application/json' }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} beim Laden von ${TRANCHOT_COVERAGE_ASSET_URL}`);
+        }
+        return response.json();
+      })
+      .then(geojson => {
+        const feature = geojson?.type === 'FeatureCollection'
+          ? geojson.features?.find(item => ['Polygon', 'MultiPolygon'].includes(item?.geometry?.type))
+          : geojson?.type === 'Feature'
+            ? geojson
+            : null;
+
+        if (!feature || !['Polygon', 'MultiPolygon'].includes(feature.geometry?.type)) {
+          throw new Error('Das Tranchot-Coverage-Asset enthält keine Polygon- oder MultiPolygon-Fläche.');
+        }
+
+        state.tranchotCoverageFeature = feature;
+        return feature;
+      })
+      .catch(error => {
+        state.tranchotCoverageError = error;
+        throw error;
+      });
+  }
+
+  return state.tranchotCoveragePromise;
+}
+
 function isPointInsideCoverage(lngLat, feature) {
   if (!lngLat || !feature) return false;
 
@@ -1087,12 +1193,24 @@ function updateAvailabilityStatus(lngLat) {
   let loadedCoverageCount = 0;
   let insideNrw = false;
   let insideKreisViersen = false;
+  let insideUraufnahme = false;
+  let insideTranchot = false;
 
   // Kreisabdeckung zuerst auswerten, damit NRW-Angebote mit explizitem
   // Kreis-Viersen-Ausschluss (Flurkarte NRW) dort nicht kurzzeitig erscheinen.
   if (state.kreisViersenCoverageFeature) {
     loadedCoverageCount += 1;
     insideKreisViersen = isPointInsideCoverage(lngLat, state.kreisViersenCoverageFeature);
+  }
+
+  if (state.uraufnahmeCoverageFeature) {
+    loadedCoverageCount += 1;
+    insideUraufnahme = isPointInsideCoverage(lngLat, state.uraufnahmeCoverageFeature);
+  }
+
+  if (state.tranchotCoverageFeature) {
+    loadedCoverageCount += 1;
+    insideTranchot = isPointInsideCoverage(lngLat, state.tranchotCoverageFeature);
   }
 
   if (state.nrwBoundaryFeature) {
@@ -1109,7 +1227,13 @@ function updateAvailabilityStatus(lngLat) {
       }
 
       for (const service of sortSupplementalMapsByYearDescending(supplementalMapServices)) {
-        if (service.coverage === COVERAGE_NRW && isSupplementalServiceAvailableAtPoint(service, insideKreisViersen)) {
+        if (service.coverage !== COVERAGE_KREIS_VIERSEN
+          && isSupplementalServiceAvailableAtPoint(
+            service,
+            insideKreisViersen,
+            insideUraufnahme,
+            insideTranchot
+          )) {
           availableServices.push(hoverCoverageDefinitions.get(service.id));
         }
       }
@@ -1850,16 +1974,46 @@ async function queryAtPositionSimple(lngLat, { showDialog = true, autoExport = f
   }
 
   let insideKreisViersen = false;
-  try {
-    const coverage = await ensureKreisViersenCoverageLoaded();
-    insideKreisViersen = isPointInsideCoverage(lngLat, coverage);
-  } catch (error) {
-    console.error('Kreis-Viersen-Abdeckung konnte bei der einfachen PDF-Abfrage nicht geprüft werden:', error);
+  let insideUraufnahme = false;
+  let insideTranchot = false;
+  const [kreisCoverageResult, uraufnahmeCoverageResult, tranchotCoverageResult] = await Promise.allSettled([
+    ensureKreisViersenCoverageLoaded(),
+    ensureUraufnahmeCoverageLoaded(),
+    ensureTranchotCoverageLoaded()
+  ]);
+  if (kreisCoverageResult.status === 'fulfilled') {
+    insideKreisViersen = isPointInsideCoverage(lngLat, kreisCoverageResult.value);
+  } else {
+    console.error(
+      'Kreis-Viersen-Abdeckung konnte bei der einfachen PDF-Abfrage nicht geprüft werden:',
+      kreisCoverageResult.reason
+    );
+  }
+  if (uraufnahmeCoverageResult.status === 'fulfilled') {
+    insideUraufnahme = isPointInsideCoverage(lngLat, uraufnahmeCoverageResult.value);
+  } else {
+    console.error(
+      'Uraufnahme-Abdeckung konnte bei der einfachen PDF-Abfrage nicht geprüft werden:',
+      uraufnahmeCoverageResult.reason
+    );
+  }
+  if (tranchotCoverageResult.status === 'fulfilled') {
+    insideTranchot = isPointInsideCoverage(lngLat, tranchotCoverageResult.value);
+  } else {
+    console.error(
+      'Tranchot-Abdeckung konnte bei der einfachen PDF-Abfrage nicht geprüft werden:',
+      tranchotCoverageResult.reason
+    );
   }
   state.selectedPointInsideKreisViersen = insideKreisViersen;
 
   const supplementalServicesAtPoint = supplementalMapServices.filter(service => (
-    isSupplementalServiceAvailableAtPoint(service, insideKreisViersen)
+    isSupplementalServiceAvailableAtPoint(
+      service,
+      insideKreisViersen,
+      insideUraufnahme,
+      insideTranchot
+    )
   ));
   const serial = ++state.simpleQuerySerial;
   const [east, north] = proj4('EPSG:4326', 'EPSG:25832', [lngLat.lng, lngLat.lat]);
@@ -1963,16 +2117,46 @@ async function queryAtPositionAdvanced(lngLat) {
   }
 
   let insideKreisViersen = false;
-  try {
-    const coverage = await ensureKreisViersenCoverageLoaded();
-    insideKreisViersen = isPointInsideCoverage(lngLat, coverage);
-  } catch (error) {
-    console.error('Kreis-Viersen-Abdeckung konnte bei der Punktauswahl nicht geprüft werden:', error);
+  let insideUraufnahme = false;
+  let insideTranchot = false;
+  const [kreisCoverageResult, uraufnahmeCoverageResult, tranchotCoverageResult] = await Promise.allSettled([
+    ensureKreisViersenCoverageLoaded(),
+    ensureUraufnahmeCoverageLoaded(),
+    ensureTranchotCoverageLoaded()
+  ]);
+  if (kreisCoverageResult.status === 'fulfilled') {
+    insideKreisViersen = isPointInsideCoverage(lngLat, kreisCoverageResult.value);
+  } else {
+    console.error(
+      'Kreis-Viersen-Abdeckung konnte bei der Punktauswahl nicht geprüft werden:',
+      kreisCoverageResult.reason
+    );
+  }
+  if (uraufnahmeCoverageResult.status === 'fulfilled') {
+    insideUraufnahme = isPointInsideCoverage(lngLat, uraufnahmeCoverageResult.value);
+  } else {
+    console.error(
+      'Uraufnahme-Abdeckung konnte bei der Punktauswahl nicht geprüft werden:',
+      uraufnahmeCoverageResult.reason
+    );
+  }
+  if (tranchotCoverageResult.status === 'fulfilled') {
+    insideTranchot = isPointInsideCoverage(lngLat, tranchotCoverageResult.value);
+  } else {
+    console.error(
+      'Tranchot-Abdeckung konnte bei der Punktauswahl nicht geprüft werden:',
+      tranchotCoverageResult.reason
+    );
   }
   state.selectedPointInsideKreisViersen = insideKreisViersen;
 
   const availableSupplementalServices = supplementalMapServices.filter(service => (
-    isSupplementalServiceAvailableAtPoint(service, insideKreisViersen)
+    isSupplementalServiceAvailableAtPoint(
+      service,
+      insideKreisViersen,
+      insideUraufnahme,
+      insideTranchot
+    )
   ));
   state.availableSupplementalMapIds = new Set(availableSupplementalServices.map(service => service.id));
   state.selectedSupplementalMapIds = new Set(availableSupplementalServices.map(service => service.id));
