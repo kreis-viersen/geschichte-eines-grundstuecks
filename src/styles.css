@@ -42,7 +42,7 @@ button { cursor: pointer; }
   background: var(--primary-soft);
   border-radius: 12px;
 }
-.brand-mark svg { width: 28px; height: 28px; }
+.brand-mark img { width: 34px; height: 34px; display: block; }
 .app-header h1 { font-size: 1.05rem; line-height: 1.15; margin: 0; }
 .app-header p { color: var(--muted); font-size: .78rem; margin: 3px 0 0; }
 .header-action { margin-left: 0; flex: 0 0 auto; }
