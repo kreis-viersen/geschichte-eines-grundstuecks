@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/assets/logo-geschichte-eines-grundstuecks.png" alt="Logo Die Geschichte eines Grundstücks" width="180">
+</p>
+
 # Die Geschichte eines Grundstücks
 
 *Karten, Luftbilder und Katasterinformationen im Wandel der Zeit*
@@ -20,7 +24,6 @@ https://kreis-viersen.usercontent.opencode.de/geschichte-eines-grundstuecks
 - zusätzliche Informationen und Karten für Punkte im Kreis Viersen
 
 Die Anwendung benötigt eine Internetverbindung, da die Karten und Luftbilder zur Laufzeit über externe Dienste geladen werden.
-
 ## Bedienung
 
 ### Einfacher Modus
