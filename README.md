@@ -1,4 +1,4 @@
-<p align="center">
+<p>
   <img src="public/assets/logo-geschichte-eines-grundstuecks.png" alt="Logo Die Geschichte eines Grundstücks" width="180">
 </p>
 
