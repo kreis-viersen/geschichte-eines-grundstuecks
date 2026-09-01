@@ -87,8 +87,6 @@ Die tatsächlich angebotenen Inhalte hängen vom Auswahlpunkt, von der regionale
 - Flurkarte NRW aus ALKIS
 - historische Fluren im Kreis Viersen
 
-Weitere Kreis-Viersen-spezifische Themen werden nur angeboten, wenn der Auswahlpunkt innerhalb des Kreisgebiets liegt.
-
 ## PDF-Export
 
 Die PDF wird im Format A4 quer erzeugt. Sie enthält grundsätzlich:
