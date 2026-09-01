@@ -82,10 +82,9 @@ Die tatsächlich angebotenen Inhalte hängen vom Auswahlpunkt, von der regionale
 - Deutsche Grundkarte 1:5.000
 - Amtliche Basiskarte NRW
 - Flurkarte NRW aus ALKIS
-- Flurkarte Kreis Viersen
 - historische Fluren im Kreis Viersen
 
-Kreis-Viersen-spezifische Themen werden nur angeboten, wenn der Auswahlpunkt innerhalb des Kreisgebiets liegt. Außerhalb des Kreises Viersen wird anstelle der lokalen Flurkarte die landesweite Flurkarte NRW angeboten.
+Weitere Kreis-Viersen-spezifische Themen werden nur angeboten, wenn der Auswahlpunkt innerhalb des Kreisgebiets liegt.
 
 ## PDF-Export
 

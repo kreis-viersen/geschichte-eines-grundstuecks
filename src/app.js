@@ -240,22 +240,6 @@ const supplementalMapServices = [
     pdfAttribution: 'Geobasis NRW · Datenlizenz Deutschland – Zero – Version 2.0'
   },
   {
-    id: 'flurkarte_nw_viersen',
-    url: 'https://gdi-niederrhein-geodienste.de/flurkarte_verb_sammeldienst/service',
-    label: 'Flurkarte Kreis Viersen',
-    shortLabel: 'Flurkarte',
-    wmsLayer: 'FlurkarteNW_Viersen',
-    selectionDetail: 'tagesaktueller Stand',
-    hoverDetail: 'Flurkarte Kreis Viersen',
-    pdfTitle: 'Flurkarte Kreis Viersen',
-    pdfSubtitle: 'tagesaktueller Stand',
-    coverage: COVERAGE_KREIS_VIERSEN,
-    sortYear: 9999,
-    minZoom: 14,
-    attribution: 'KRZN' ,
-    pdfAttribution: 'KRZN · Datenlizenz Deutschland – Zero – Version 2.0'
-  },
-  {
     id: 'wms_nw_alkis_flurkarte',
     url: `${WMS_BASE_URL}/wms_nw_alkis`,
     label: 'Flurkarte NRW',
@@ -277,7 +261,6 @@ const supplementalMapServices = [
     pdfTitle: 'Flurkarte NRW',
     pdfSubtitle: 'Liegenschaftskarte NRW · ALKIS',
     coverage: COVERAGE_NRW,
-    excludeKreisViersen: true,
     sortYear: 9999,
     minZoom: 14,
     attribution: 'Geobasis NRW',
@@ -387,7 +370,6 @@ function isSupplementalServiceAvailableAtPoint(
   if (service.coverage === COVERAGE_KREIS_VIERSEN) return insideKreisViersen;
   if (service.coverage === COVERAGE_URAUFNAHME) return insideUraufnahme;
   if (service.coverage === COVERAGE_TRANCHOT) return insideTranchot;
-  if (service.coverage === COVERAGE_NRW && service.excludeKreisViersen) return !insideKreisViersen;
   return service.coverage === COVERAGE_NRW;
 }
 
@@ -444,13 +426,19 @@ const metadataPermalinkAliases = new Map([
 const supplementalPermalinkAliases = new Map([
   ['wms_nw_tranchot', 'tranchot'],
   ['wms_nw_uraufnahme', 'ur'],
-  ['flurkarte_nw_viersen', 'flurkv'],
   ['wms_nw_alkis_flurkarte', 'flurnrw'],
   ['wms_nw_abk', 'abk'],
   ['fluren_historisch_kvie', 'histflurkv'],
   ['wms_nw_neuaufnahme', 'neu'],
   ['wms_nw_tk25_1936-1945', 'tk25'],
   ['wms_nw_dgk5', 'dgk']
+]);
+
+// Ältere Permalinks mit der früheren Kreis-Viersen-Flurkarte werden auf die
+// landesweite ALKIS-Flurkarte umgeleitet.
+const retiredSupplementalPermalinkAliases = new Map([
+  ['flurkv', 'wms_nw_alkis_flurkarte'],
+  ['map-flurkarte-nw-viersen', 'wms_nw_alkis_flurkarte']
 ]);
 
 // Alte 2.2.41-Permalinks bleiben lesbar. Neu erzeugte Links verwenden immer
@@ -1196,8 +1184,6 @@ function updateAvailabilityStatus(lngLat) {
   let insideUraufnahme = false;
   let insideTranchot = false;
 
-  // Kreisabdeckung zuerst auswerten, damit NRW-Angebote mit explizitem
-  // Kreis-Viersen-Ausschluss (Flurkarte NRW) dort nicht kurzzeitig erscheinen.
   if (state.kreisViersenCoverageFeature) {
     loadedCoverageCount += 1;
     insideKreisViersen = isPointInsideCoverage(lngLat, state.kreisViersenCoverageFeature);
@@ -1219,13 +1205,6 @@ function updateAvailabilityStatus(lngLat) {
     if (insideNrw) {
       availableServices.push(hoverCoverageDefinitions.get('aerial-images-nrw'));
 
-      // Im Kreis Viersen steht die lokale Flurkarte – analog zur PDF-Reihenfolge –
-      // unmittelbar hinter den Luftbildern. Die übrigen Angebote behalten ihre
-      // bisherige Sortierung.
-      if (insideKreisViersen) {
-        availableServices.push(hoverCoverageDefinitions.get('flurkarte_nw_viersen'));
-      }
-
       for (const service of sortSupplementalMapsByYearDescending(supplementalMapServices)) {
         if (service.coverage !== COVERAGE_KREIS_VIERSEN
           && isSupplementalServiceAvailableAtPoint(
@@ -1242,7 +1221,7 @@ function updateAvailabilityStatus(lngLat) {
 
   if (insideKreisViersen) {
     for (const service of sortSupplementalMapsByYearDescending(supplementalMapServices)) {
-      if (service.coverage === COVERAGE_KREIS_VIERSEN && service.id !== 'flurkarte_nw_viersen') {
+      if (service.coverage === COVERAGE_KREIS_VIERSEN) {
         availableServices.push(hoverCoverageDefinitions.get(service.id));
       }
     }
@@ -1376,6 +1355,11 @@ function getServiceForMetadataPermalinkId(permalinkId) {
 }
 
 function getSupplementalServiceForPermalinkId(permalinkId) {
+  const retiredReplacementId = retiredSupplementalPermalinkAliases.get(permalinkId);
+  if (retiredReplacementId) {
+    return supplementalMapServices.find(service => service.id === retiredReplacementId) ?? null;
+  }
+
   return supplementalMapServices.find(service => (
     getSupplementalPermalinkId(service.id) === permalinkId
     || getLegacySupplementalPermalinkId(service.id) === permalinkId
@@ -1576,7 +1560,6 @@ function applyAppMode(mode) {
 }
 
 function getSimpleScaleForSupplementalService(service) {
-  if (service.id === 'flurkarte_nw_viersen') return SIMPLE_SCALE_AERIAL_AND_PARCEL;
   if (service.id === 'wms_nw_alkis_flurkarte') return SIMPLE_SCALE_ALKIS_PARCEL;
   if (service.id === 'wms_nw_abk') return SIMPLE_SCALE_ABK;
   if (service.id === 'wms_nw_dgk5') return SIMPLE_SCALE_BASE_MAP;
