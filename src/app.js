@@ -49,6 +49,12 @@ const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const PHOTON_RESULT_LIMIT = 5;
 const PHOTON_FALLBACK_NRW_BBOX = [5.75, 50.25, 9.65, 52.65];
 const PHOTON_ERROR_TOAST_INTERVAL_MS = 10_000;
+const CADASTRAL_INDEX_ASSET_URL = `${import.meta.env.BASE_URL}assets/katasteraemter-gemarkungen-fluren-nrw.json`;
+const ALKIS_OAPIF_PARCELS_URL = 'https://ogc-api.nrw.de/lika/v1/collections/flurstueck';
+const ALKIS_OAPIF_PARCEL_POINTS_URL = 'https://ogc-api.nrw.de/lika/v1/collections/flurstueck_punkt';
+const PARCEL_SEARCH_SOURCE_ID = 'parcel-search-source';
+const PARCEL_SEARCH_FILL_LAYER_ID = 'parcel-search-fill';
+const PARCEL_SEARCH_LINE_LAYER_ID = 'parcel-search-line';
 const APP_MODE_SIMPLE = 'simple';
 const APP_MODE_ADVANCED = 'advanced';
 const SIMPLE_SCALE_AERIAL_AND_PARCEL = 1_000;
@@ -566,7 +572,12 @@ const state = {
   simpleExporting: false,
   simpleAutoExportActive: false,
   autoPrintStatusTimer: null,
-  simpleDialogCamera: null
+  simpleDialogCamera: null,
+  cadastralIndex: null,
+  cadastralIndexPromise: null,
+  parcelFeatures: [],
+  syncingParcelSelectors: false,
+  parcelSearchSerial: 0
 };
 
 const elements = Object.fromEntries([
@@ -578,6 +589,10 @@ const elements = Object.fromEntries([
   'printFrame', 'includePointPdfCheckbox', 'advancedPdfScaleView', 'advancedPdfScaleRecommended', 'exportPdfButton', 'exportQlrButton', 'copyPermalinkButton', 'exportStatus',
   'availabilityStatus', 'availabilityList', 'aerialSelectionControls',
   'additionalMapsSection', 'additionalMapsList', 'geocoderContainer',
+  'parcelSearchButton', 'parcelSearchDialog', 'parcelSearchForm', 'closeParcelSearchButton',
+  'parcelSelectPanel', 'parcelDirectPanel',
+  'parcelOfficeSelect', 'parcelDistrictSelect', 'parcelFlurSelect', 'parcelNumberSelect',
+  'parcelListStatus', 'parcelSelectSearchButton', 'parcelDirectInput', 'parcelDirectSearchButton', 'parcelSearchStatus',
   'simpleModeButton', 'advancedModeButton', 'simpleExportDialog', 'simpleExportTitle',
   'closeSimpleExportButton', 'simpleCoordinateText', 'simpleLoadingState',
   'simpleErrorState', 'simpleErrorText', 'simpleEmptyState', 'simpleExportContent',
@@ -4885,6 +4900,378 @@ async function handleSimplePdfExportClick() {
   await exportSimpleLayersToPdf({ filename: makePdfFilename(), isAuto: false });
 }
 
+
+function populateSelect(select, items, { placeholder = 'Bitte auswählen' } = {}) {
+  select.replaceChildren();
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = placeholder;
+  select.append(empty);
+  for (const item of items) {
+    const option = document.createElement('option');
+    option.value = String(item.value);
+    option.textContent = item.label;
+    select.append(option);
+  }
+}
+
+async function loadCadastralIndex() {
+  if (state.cadastralIndex) return state.cadastralIndex;
+  if (!state.cadastralIndexPromise) {
+    state.cadastralIndexPromise = (async () => {
+      const response = await fetch(CADASTRAL_INDEX_ASSET_URL, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Ungültiges JSON-Format');
+      state.cadastralIndex = data;
+      return data;
+    })().finally(() => {
+      if (!state.cadastralIndex) state.cadastralIndexPromise = null;
+    });
+  }
+  return state.cadastralIndexPromise;
+}
+
+function toOgcGemarkungKey(shortKey) {
+  const digits = String(shortKey ?? '').replace(/\D/g, '').padStart(4, '0').slice(-4);
+  return `05${digits}`;
+}
+
+function toOgcFlurKey(shortKey, flur) {
+  const gemaschl = toOgcGemarkungKey(shortKey);
+  const flurDigits = String(flur ?? '').replace(/\D/g, '').padStart(3, '0').slice(-3);
+  return `${gemaschl}${flurDigits}`;
+}
+
+function toOgcParcelKey(shortKey, flur, zaehler, nenner) {
+  const flurschl = toOgcFlurKey(shortKey, flur);
+  const zaehlerDigits = String(zaehler ?? '').replace(/\D/g, '').padStart(5, '0').slice(-5);
+  const nennerRaw = String(nenner ?? '').replace(/\D/g, '');
+  const nennerPart = nennerRaw ? nennerRaw.padStart(4, '0').slice(-4) : '____';
+  return `${flurschl}${zaehlerDigits}${nennerPart}__`;
+}
+
+function getParcelNumberLabel(properties = {}) {
+  const zaehler = properties.flstnrzae ?? properties.flurstuecksnummer_zaehler ?? properties.zaehler;
+  const nenner = properties.flstnrnen ?? properties.flurstuecksnummer_nenner ?? properties.nenner;
+  if (zaehler == null) return String(properties.flstkennz ?? properties.flurstueckskennzeichen ?? properties.id ?? 'Flurstück');
+  const z = String(zaehler).replace(/^0+/, '') || '0';
+  const n = nenner == null ? '' : (String(nenner).replace(/^0+/, '') || '0');
+  return n && n !== '0' ? `${z}/${n}` : z;
+}
+
+function createAlkisItemsUrl(collectionUrl, params = {}, properties = []) {
+  const url = new URL(`${collectionUrl}/items`);
+  url.searchParams.set('f', 'json');
+  url.searchParams.set('profile', 'rfc7946');
+  if (properties.length) url.searchParams.set('properties', properties.join(','));
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+async function fetchAlkisFeatures(collectionUrl, params, { limit = 10000, properties = [] } = {}) {
+  const url = createAlkisItemsUrl(collectionUrl, { ...params, limit }, properties);
+  const response = await fetch(url, { headers: { Accept: 'application/geo+json, application/json' } });
+  if (!response.ok) throw new Error(`ALKIS-Abfrage fehlgeschlagen (HTTP ${response.status}).`);
+  const data = await response.json();
+  return Array.isArray(data?.features) ? data.features : [];
+}
+
+function fetchParcelFeatures(params, options = {}) {
+  return fetchAlkisFeatures(ALKIS_OAPIF_PARCELS_URL, params, options);
+}
+
+function fetchParcelPointFeatures(params, options = {}) {
+  return fetchAlkisFeatures(ALKIS_OAPIF_PARCEL_POINTS_URL, params, options);
+}
+
+function installParcelHighlight(feature) {
+  if (!feature?.geometry || !map.isStyleLoaded()) return;
+  const data = { type: 'FeatureCollection', features: [feature] };
+  const source = map.getSource(PARCEL_SEARCH_SOURCE_ID);
+  if (source) source.setData(data);
+  else map.addSource(PARCEL_SEARCH_SOURCE_ID, { type: 'geojson', data });
+
+  if (!map.getLayer(PARCEL_SEARCH_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: PARCEL_SEARCH_FILL_LAYER_ID,
+      type: 'fill',
+      source: PARCEL_SEARCH_SOURCE_ID,
+      paint: { 'fill-color': '#478bca', 'fill-opacity': 0.18 }
+    });
+  }
+  if (!map.getLayer(PARCEL_SEARCH_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: PARCEL_SEARCH_LINE_LAYER_ID,
+      type: 'line',
+      source: PARCEL_SEARCH_SOURCE_ID,
+      paint: { 'line-color': '#d61f2c', 'line-width': 3 }
+    });
+  }
+}
+
+function zoomToParcelFeature(feature) {
+  installParcelHighlight(feature);
+  const bounds = createBoundsFromFeature(feature);
+  if (bounds && !bounds.isEmpty()) {
+    map.fitBounds(bounds, { padding: 90, maxZoom: 19, duration: 900 });
+  }
+  elements.parcelSearchDialog.close();
+  showToast('Flurstück gefunden. Für die Auswahl anschließend auf die gewünschte Stelle im Flurstück klicken.');
+}
+
+async function initializeParcelSearch() {
+  elements.parcelSearchStatus.textContent = 'Katasterdaten werden geladen …';
+  try {
+    const index = await loadCadastralIndex();
+    const offices = Object.keys(index).sort((a, b) => a.localeCompare(b, 'de')).map(name => ({ value: name, label: name }));
+    populateSelect(elements.parcelOfficeSelect, offices);
+    elements.parcelSearchStatus.textContent = '';
+  } catch (error) {
+    console.error(error);
+    elements.parcelSearchStatus.textContent = 'Katasterämter, Gemarkungen und Fluren konnten nicht geladen werden.';
+  }
+}
+
+function resetParcelDistricts() {
+  populateSelect(elements.parcelDistrictSelect, []);
+  populateSelect(elements.parcelFlurSelect, []);
+  populateSelect(elements.parcelNumberSelect, []);
+  elements.parcelDistrictSelect.disabled = true;
+  elements.parcelFlurSelect.disabled = true;
+  elements.parcelNumberSelect.disabled = true;
+  elements.parcelSelectSearchButton.disabled = true;
+  elements.parcelListStatus.textContent = '';
+}
+
+function handleParcelOfficeChange() {
+  resetParcelDistricts();
+  const office = elements.parcelOfficeSelect.value;
+  const districts = state.cadastralIndex?.[office];
+  if (!districts || typeof districts !== 'object') return;
+  const items = Object.entries(districts)
+    .map(([name, value]) => ({ value: name, label: name, key: value?.schluessel ?? '' }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'de', { numeric: true }));
+  populateSelect(elements.parcelDistrictSelect, items.map(item => ({ value: item.value, label: item.label })));
+  elements.parcelDistrictSelect.disabled = false;
+}
+
+function handleParcelDistrictChange() {
+  populateSelect(elements.parcelFlurSelect, []);
+  populateSelect(elements.parcelNumberSelect, []);
+  elements.parcelFlurSelect.disabled = true;
+  elements.parcelNumberSelect.disabled = true;
+  elements.parcelSelectSearchButton.disabled = true;
+  elements.parcelListStatus.textContent = '';
+  const district = state.cadastralIndex?.[elements.parcelOfficeSelect.value]?.[elements.parcelDistrictSelect.value];
+  if (!district) return;
+  const fluren = Array.isArray(district.fluren) ? district.fluren : [];
+  populateSelect(elements.parcelFlurSelect, fluren.map(value => ({ value, label: String(value) })));
+  elements.parcelFlurSelect.disabled = false;
+}
+
+async function handleParcelFlurChange() {
+  populateSelect(elements.parcelNumberSelect, []);
+  elements.parcelNumberSelect.disabled = true;
+  elements.parcelSelectSearchButton.disabled = true;
+  state.parcelFeatures = [];
+  const flur = elements.parcelFlurSelect.value;
+  const district = state.cadastralIndex?.[elements.parcelOfficeSelect.value]?.[elements.parcelDistrictSelect.value];
+  if (!flur || !district?.schluessel) return;
+  const serial = ++state.parcelSearchSerial;
+  elements.parcelListStatus.textContent = 'Flurstücke werden geladen …';
+  try {
+    const gemaschl = toOgcGemarkungKey(district.schluessel);
+    const flurschl = toOgcFlurKey(district.schluessel, flur);
+    const features = await fetchParcelPointFeatures(
+      { gemaschl, flurschl },
+      { properties: ['flstnrzae', 'flstnrnen'] }
+    );
+    if (serial !== state.parcelSearchSerial) return;
+    const sorted = features.slice().sort((a, b) => getParcelNumberLabel(a.properties).localeCompare(getParcelNumberLabel(b.properties), 'de', { numeric: true }));
+    state.parcelFeatures = sorted;
+    populateSelect(elements.parcelNumberSelect, sorted.map((feature, index) => ({ value: index, label: getParcelNumberLabel(feature.properties) })));
+    elements.parcelNumberSelect.disabled = sorted.length === 0;
+    elements.parcelListStatus.textContent = sorted.length ? `${sorted.length} Flurstücke verfügbar.` : 'Keine Flurstücke gefunden.';
+  } catch (error) {
+    console.error(error);
+    if (serial !== state.parcelSearchSerial) return;
+    elements.parcelListStatus.textContent = 'Flurstücke konnten nicht geladen werden.';
+  }
+}
+
+function updateParcelSearchButtonState() {
+  elements.parcelSelectSearchButton.disabled = elements.parcelNumberSelect.value === '';
+}
+
+function clearParcelDirectSearchOnManualSelection() {
+  if (state.syncingParcelSelectors) return;
+  if (elements.parcelDirectInput.value) {
+    elements.parcelDirectInput.value = '';
+    elements.parcelSearchStatus.textContent = '';
+  }
+}
+
+function handleParcelNumberChange() {
+  updateParcelSearchButtonState();
+}
+
+async function searchSelectedParcel() {
+  const index = Number(elements.parcelNumberSelect.value);
+  const pointFeature = Number.isInteger(index) ? state.parcelFeatures[index] : null;
+  const district = state.cadastralIndex?.[elements.parcelOfficeSelect.value]?.[elements.parcelDistrictSelect.value];
+  const flur = elements.parcelFlurSelect.value;
+  if (!pointFeature || !district?.schluessel || !flur) return;
+
+  const properties = pointFeature.properties ?? {};
+  const zaehler = properties.flstnrzae;
+  const nenner = properties.flstnrnen;
+  if (zaehler == null) return;
+
+  elements.parcelSelectSearchButton.disabled = true;
+  elements.parcelListStatus.textContent = 'Flurstück wird geladen …';
+  try {
+    const flstkennz = toOgcParcelKey(district.schluessel, flur, zaehler, nenner);
+    const features = await fetchParcelFeatures({ flstkennz }, { limit: 5 });
+    const feature = features.find(item => item?.geometry) ?? null;
+    if (!feature) {
+      elements.parcelListStatus.textContent = 'Flurstücksgeometrie konnte nicht geladen werden.';
+      return;
+    }
+    elements.parcelListStatus.textContent = '';
+    zoomToParcelFeature(feature);
+  } catch (error) {
+    console.error(error);
+    elements.parcelListStatus.textContent = 'Flurstücksgeometrie konnte nicht geladen werden.';
+  } finally {
+    updateParcelSearchButtonState();
+  }
+}
+
+async function fetchDirectParcel(query) {
+  const value = String(query ?? '').trim();
+  if (!value) throw new Error('Bitte ein Suchkennzeichen eingeben.');
+
+  const properties = ['gemaschl', 'flurschl', 'flur', 'flstnrzae', 'flstnrnen', 'flstkennz'];
+
+  const shortened = value.match(/^(\d{4})-(\d+)-(\d+)(?:\/(\d+))?$/);
+  if (shortened) {
+    const [, gemarkung, flur, zaehler, nenner] = shortened;
+    const flstkennz = toOgcParcelKey(gemarkung, flur, zaehler, nenner);
+    const features = await fetchParcelFeatures({ flstkennz }, { limit: 1, properties });
+    return features[0] ?? null;
+  }
+
+  if (/^DENW[A-Z0-9]+$/i.test(value)) {
+    const features = await fetchParcelFeatures(
+      { flurstid: value },
+      { limit: 1, properties: [...properties, 'flurstid'] }
+    );
+    return features[0] ?? null;
+  }
+
+  if (value.length === 20) {
+    const features = await fetchParcelFeatures({ flstkennz: value }, { limit: 1, properties });
+    return features[0] ?? null;
+  }
+
+  throw new Error('Format nicht erkannt.');
+}
+
+
+function normalizeParcelNumericValue(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits ? String(Number(digits)) : '';
+}
+
+function findCadastralDistrictByKey(shortKey) {
+  const wanted = String(shortKey ?? '').replace(/\D/g, '').padStart(4, '0').slice(-4);
+  for (const [officeName, districts] of Object.entries(state.cadastralIndex ?? {})) {
+    for (const [districtName, district] of Object.entries(districts ?? {})) {
+      const key = String(district?.schluessel ?? '').replace(/\D/g, '').padStart(4, '0').slice(-4);
+      if (key === wanted) return { officeName, districtName, district };
+    }
+  }
+  return null;
+}
+
+async function syncParcelSelectorsFromFeature(feature) {
+  state.syncingParcelSelectors = true;
+  try {
+    const properties = feature?.properties ?? {};
+  const gemaschl = String(properties.gemaschl ?? '').replace(/\D/g, '');
+  const flurschl = String(properties.flurschl ?? '').replace(/\D/g, '');
+  const shortKey = gemaschl.length >= 4 ? gemaschl.slice(-4) : flurschl.slice(2, 6);
+  if (!shortKey) return false;
+
+  const match = findCadastralDistrictByKey(shortKey);
+  if (!match) return false;
+
+  // Katasteramt und Gemarkung aus dem lokalen NRW-Index ableiten.
+  elements.parcelOfficeSelect.value = match.officeName;
+  handleParcelOfficeChange();
+  elements.parcelDistrictSelect.value = match.districtName;
+  handleParcelDistrictChange();
+
+  const featureFlur = normalizeParcelNumericValue(
+    properties.flur ?? (flurschl.length >= 3 ? flurschl.slice(-3) : '')
+  );
+  const matchingFlurOption = Array.from(elements.parcelFlurSelect.options)
+    .find(option => normalizeParcelNumericValue(option.value) === featureFlur);
+  if (!matchingFlurOption) return false;
+
+  elements.parcelFlurSelect.value = matchingFlurOption.value;
+  await handleParcelFlurChange();
+
+  const wantedZaehler = normalizeParcelNumericValue(properties.flstnrzae);
+  const wantedNenner = normalizeParcelNumericValue(properties.flstnrnen);
+  const matchingIndex = state.parcelFeatures.findIndex(item => {
+    const itemProperties = item?.properties ?? {};
+    return normalizeParcelNumericValue(itemProperties.flstnrzae) === wantedZaehler
+      && normalizeParcelNumericValue(itemProperties.flstnrnen) === wantedNenner;
+  });
+
+  if (matchingIndex < 0) return false;
+
+    elements.parcelNumberSelect.value = String(matchingIndex);
+    handleParcelNumberChange();
+    return true;
+  } finally {
+    state.syncingParcelSelectors = false;
+  }
+}
+
+async function handleParcelDirectSearch() {
+  elements.parcelSearchStatus.textContent = 'Flurstück wird gesucht …';
+  elements.parcelDirectSearchButton.disabled = true;
+  elements.parcelSelectSearchButton.disabled = true;
+
+  try {
+    const feature = await fetchDirectParcel(elements.parcelDirectInput.value);
+    if (!feature) {
+      elements.parcelSearchStatus.textContent = 'Kein Flurstück gefunden.';
+      return;
+    }
+
+    const synchronized = await syncParcelSelectorsFromFeature(feature);
+    if (!synchronized) {
+      elements.parcelSearchStatus.textContent = 'Flurstück gefunden, die Auswahllisten konnten aber nicht vollständig gesetzt werden.';
+      return;
+    }
+
+    elements.parcelSearchStatus.textContent = 'Flurstück gefunden.';
+    updateParcelSearchButtonState();
+  } catch (error) {
+    console.error(error);
+    elements.parcelSearchStatus.textContent = error?.message ?? 'Flurstück konnte nicht gesucht werden.';
+  } finally {
+    elements.parcelDirectSearchButton.disabled = false;
+  }
+}
+
+
 function showToast(message) {
   clearTimeout(state.toastTimer);
   elements.toast.textContent = message;
@@ -4930,6 +5317,34 @@ for (const input of [elements.simpleShareDialogUrl, elements.simpleShareAutoUrl]
   input.addEventListener('focus', () => input.select());
   input.addEventListener('click', () => input.select());
 }
+elements.parcelSearchButton.addEventListener('click', async () => {
+  elements.parcelSearchDialog.showModal();
+  if (!state.cadastralIndex) await initializeParcelSearch();
+});
+elements.parcelOfficeSelect.addEventListener('change', () => {
+  clearParcelDirectSearchOnManualSelection();
+  handleParcelOfficeChange();
+});
+elements.parcelDistrictSelect.addEventListener('change', () => {
+  clearParcelDirectSearchOnManualSelection();
+  handleParcelDistrictChange();
+});
+elements.parcelFlurSelect.addEventListener('change', () => {
+  clearParcelDirectSearchOnManualSelection();
+  handleParcelFlurChange();
+});
+elements.parcelNumberSelect.addEventListener('change', () => {
+  clearParcelDirectSearchOnManualSelection();
+  handleParcelNumberChange();
+});
+elements.parcelSelectSearchButton.addEventListener('click', searchSelectedParcel);
+elements.parcelDirectSearchButton.addEventListener('click', handleParcelDirectSearch);
+elements.parcelDirectInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    handleParcelDirectSearch();
+  }
+});
 elements.simpleModeButton.addEventListener('click', () => applyAppMode(APP_MODE_SIMPLE));
 elements.advancedModeButton.addEventListener('click', () => applyAppMode(APP_MODE_ADVANCED));
 elements.simpleExportDialog.addEventListener('cancel', event => {

@@ -1038,3 +1038,79 @@ body[data-app-mode="simple"] .intro-card {
   .simple-share-row { grid-template-columns: 1fr; gap: 5px; }
   .simple-share-control { grid-template-columns: minmax(0, 1fr) auto; }
 }
+
+.parcel-search-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 9px 12px;
+}
+.parcel-search-dialog {
+  border: 0;
+  border-radius: 16px;
+  padding: 0;
+  width: min(620px, calc(100% - 28px));
+  max-height: min(88vh, 760px);
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+}
+.parcel-search-dialog::backdrop { background: rgb(47 46 48 / 52%); backdrop-filter: blur(3px); }
+.parcel-search-dialog form { position: relative; padding: 24px; overflow-y: auto; max-height: min(88vh, 760px); }
+.parcel-search-dialog h2 { margin: 0 42px 14px 0; font-size: 1.25rem; }
+.parcel-search-panel { display: grid; gap: 12px; }
+.parcel-search-panel label { display: grid; gap: 6px; font-size: .82rem; font-weight: 700; }
+.parcel-search-panel select,
+.parcel-search-panel input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 11px;
+}
+.parcel-search-panel select:disabled { background: var(--surface-soft); color: var(--muted); }
+.parcel-search-status { min-height: 1.2em; margin: 0; font-size: .8rem; }
+.parcel-search-help { margin: -4px 0 0; font-size: .78rem; line-height: 1.45; }
+.parcel-search-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 14px; color: var(--muted); font-size: .78rem; font-weight: 700; }
+.parcel-search-divider::before,
+.parcel-search-divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+.parcel-search-divider span { white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .parcel-search-button { padding-inline: 9px; }
+}
+@media (max-width: 760px) {
+  .parcel-search-button { font-size: .76rem; padding: 8px; }
+}
+
+.parcel-search-submit { width: 100%; margin-top: 16px; }
+
+
+.parcel-search-section-title {
+  margin: 0 0 10px;
+  font-size: .92rem;
+  line-height: 1.2;
+}
+
+.parcel-direct-search-panel {
+  padding-top: 2px;
+}
+
+.parcel-direct-search-label {
+  margin-bottom: 8px;
+}
+
+.parcel-direct-search-button {
+  align-self: flex-start;
+}
+
+.parcel-direct-search-panel .parcel-search-help {
+  margin-top: 2px;
+}
+
+
+.parcel-search-launcher {
+  font-size: .85rem;
+  font-weight: 600;
+  padding-inline: 10px;
+}

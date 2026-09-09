@@ -18,6 +18,7 @@ LICENSE text eol=lf
 *.css text eol=lf
 *.svg text eol=lf
 *.mjs text eol=lf
+*.yml text eol=lf
 
 *.bat text eol=crlf
 *.cmd text eol=crlf

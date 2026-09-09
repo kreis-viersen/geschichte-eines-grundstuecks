@@ -14,6 +14,7 @@ https://kreis-viersen.usercontent.opencode.de/geschichte-eines-grundstuecks
 
 - Auswahl eines Punktes innerhalb Nordrhein-Westfalens
 - Adresssuche mit Photon auf Basis von OpenStreetMap
+- NRW-weite Flurstückssuche per Auswahl oder Direktsuche über ALKIS
 - Abfrage historischer und aktueller Luftbilder von Geobasis NRW
 - Einbindung historischer Kartenwerke, Basiskarten und Flurkarten
 - einfache automatische PDF-Erstellung
@@ -42,6 +43,20 @@ Im Dialog werden außerdem zwei teilbare Links angeboten:
 
 - **Mit Dialog** öffnet die Anwendung am gewählten Punkt und zeigt den PDF-Dialog.
 - **Direkter PDF-Export** startet nach dem Öffnen automatisch die Ermittlung und Erstellung der PDF.
+
+
+### Flurstückssuche
+
+Zusätzlich zur Adresssuche steht eine NRW-weite Flurstückssuche zur Verfügung. Sie verwendet die OGC API Features „ALKIS vereinfachtes Schema“ von Geobasis NRW.
+
+Es gibt zwei Suchwege:
+
+- **Auswählen:** Katasteramt → Gemarkung → Flur → Flurstück. Nach Auswahl einer Flur werden die dort verfügbaren Flurstücke dynamisch aus der OGC API geladen.
+- **Direktsuche:** über ein verkürztes Kennzeichen wie `3230-1-1`, eine ALKIS-ID wie `DENW33AL00009NPL` oder ein 20-stelliges Flurstückskennzeichen wie `05320308900675______`.
+
+Ein gefundenes Flurstück wird hervorgehoben und die Karte darauf gezoomt. Der eigentliche Auswahlpunkt für Luftbilder und PDF wird weiterhin durch einen anschließenden Kartenklick gesetzt.
+
+Die für die Auswahlfelder benötigten Katasterämter, Gemarkungen und Fluren werden als lokales JSON-Asset bereitgestellt. Der Workflow `.github/workflows/update-cadastral-index.yml` erzeugt dieses Asset täglich bei Bedarf aus den ALKIS OGC API - Features von Geobasis NRW.
 
 ### Erweiterter Modus
 

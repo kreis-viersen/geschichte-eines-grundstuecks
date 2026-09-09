@@ -24,6 +24,7 @@
         </div>
       </div>
       <div id="geocoderContainer" class="geocoder-container" hidden aria-label="Adresssuche in Nordrhein-Westfalen"></div>
+      <button id="parcelSearchButton" class="secondary-button parcel-search-button parcel-search-launcher" type="button" title="Flurstück suchen">Flurstückssuche</button>
       <button id="aboutButton" class="icon-button header-action" type="button" title="Über diese Anwendung" aria-label="Über diese Anwendung">i</button>
     </header>
 
@@ -171,6 +172,38 @@
   </div>
 
 
+
+  <dialog id="parcelSearchDialog" class="parcel-search-dialog">
+    <form method="dialog" id="parcelSearchForm">
+      <button id="closeParcelSearchButton" class="icon-button dialog-close" type="submit" value="cancel" aria-label="Dialog schließen">×</button>
+      <p class="eyebrow">NRW-weite Suche</p>
+      <h2>Flurstück suchen</h2>
+      <section id="parcelSelectPanel" class="parcel-search-panel">
+        <h3 class="parcel-search-section-title">Auswahl über Katasterdaten</h3>
+        <label>Katasteramt<select id="parcelOfficeSelect"><option value="">Bitte auswählen</option></select></label>
+        <label>Gemarkung<select id="parcelDistrictSelect" disabled><option value="">Bitte auswählen</option></select></label>
+        <label>Flur<select id="parcelFlurSelect" disabled><option value="">Bitte auswählen</option></select></label>
+        <label>Flurstück<select id="parcelNumberSelect" disabled><option value="">Bitte auswählen</option></select></label>
+        <p id="parcelListStatus" class="muted parcel-search-status"></p>
+      </section>
+
+      <div class="parcel-search-divider"><span>oder</span></div>
+
+      <section id="parcelDirectPanel" class="parcel-search-panel parcel-direct-search-panel">
+        <h3 class="parcel-search-section-title">Direktsuche</h3>
+        <label class="parcel-direct-search-label">
+          <span>Suchbegriff</span>
+          <input id="parcelDirectInput" type="search" autocomplete="off" placeholder="z. B. 3230-1-1, DENW33AL00009NPL oder 05320308900675______">
+        </label>
+        <button id="parcelDirectSearchButton" class="secondary-button parcel-direct-search-button" type="button">Suchen</button>
+        <p class="muted parcel-search-help">Gemarkung-Flur-Flurstück, ALKIS-ID oder Flurstückskennzeichen.</p>
+      </section>
+
+      <button id="parcelSelectSearchButton" class="primary-button parcel-search-submit" type="button" disabled>Flurstück anzeigen</button>
+      <p id="parcelSearchStatus" class="muted parcel-search-status" role="status"></p>
+    </form>
+  </dialog>
+
   <dialog id="simpleExportDialog" class="simple-export-dialog">
     <form method="dialog">
       <button id="closeSimpleExportButton" class="icon-button dialog-close" type="submit" value="cancel" aria-label="Dialog schließen">×</button>
@@ -254,6 +287,7 @@
         <div><dt>Geodaten</dt><dd>Datenlizenz Deutschland – Zero – Version 2.0</dd></div>
         <div><dt>Hintergrundkarte</dt><dd><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap-Mitwirkende · ODbL</a></dd></div>
         <div><dt>Adresssuche</dt><dd>Photon von komoot auf Basis von OpenStreetMap, Suchbereich Nordrhein-Westfalen</dd></div>
+        <div><dt>Flurstückssuche</dt><dd>OGC API Features ALKIS vereinfachtes Schema von Geobasis NRW; Katasterämter, Gemarkungen und Fluren als lokal erzeugtes JSON-Asset</dd></div>
         <div><dt>NRW-Grenze</dt><dd>Lokales GeoJSON-Asset auf Basis DVG1 NRW</dd></div>
         <div><dt>Maßstab</dt><dd>Einfacher Modus mit festen Zielmaßstäben; im erweiterten Modus wahlweise sichtbarer A4-Ausschnitt oder empfohlene Maßstäbe für Kartenwerke und OSM. Luftbilder behalten dort den sichtbaren A4-Ausschnitt. Jede PDF-Seite enthält einen grafischen Maßstabsbalken.</dd></div>
         <div><dt>PDF-Export</dt><dd>A4 quer; Download über die normale Browserfunktion und automatischer URL-Export mit sichtbarer Fortschrittsanzeige</dd></div>
