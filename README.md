@@ -56,6 +56,8 @@ Es gibt zwei Suchwege:
 
 Ein gefundenes Flurstück wird hervorgehoben und die Karte darauf gezoomt. Der eigentliche Auswahlpunkt für Luftbilder und PDF wird weiterhin durch einen anschließenden Kartenklick gesetzt.
 
+Mit dem Query-Parameter `?flurstueckssuche` kann die Anwendung direkt mit geöffneter Flurstückssuche gestartet werden. Bei Drucklinks mit `print` oder Permalinks mit `point` wird der Parameter ignoriert.
+
 Die für die Auswahlfelder benötigten Katasterämter, Gemarkungen und Fluren werden als lokales JSON-Asset bereitgestellt. Der Workflow `.github/workflows/update-cadastral-index.yml` erzeugt dieses Asset täglich bei Bedarf aus den ALKIS OGC API - Features von Geobasis NRW.
 
 ### Erweiterter Modus

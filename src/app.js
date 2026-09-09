@@ -65,6 +65,7 @@ const SIMPLE_SCALE_HISTORICAL = 10_000;
 const STARTUP_PRINT_PARAM = 'print';
 const STARTUP_PRINT_DIALOG = 'dialog';
 const STARTUP_PRINT_AUTO = 'auto';
+const STARTUP_PARCEL_SEARCH_PARAM = 'flurstueckssuche';
 const PERMALINK_POINT_PARAM = 'point';
 const PERMALINK_LAYERS_PARAM = 'layers';
 const SIMPLE_DIALOG_MOBILE_BREAKPOINT_PX = 760;
@@ -98,6 +99,13 @@ function parseMapHash(hash = window.location.hash) {
 function getStartupPrintAction(search = window.location.search) {
   const value = new URLSearchParams(search).get(STARTUP_PRINT_PARAM);
   return value === STARTUP_PRINT_DIALOG || value === STARTUP_PRINT_AUTO ? value : null;
+}
+
+function shouldOpenStartupParcelSearch(search = window.location.search) {
+  const params = new URLSearchParams(search);
+  return params.has(STARTUP_PARCEL_SEARCH_PARAM)
+    && !params.has(STARTUP_PRINT_PARAM)
+    && !params.has(PERMALINK_POINT_PARAM);
 }
 
 function parsePermalinkLayerToken(value) {
@@ -152,6 +160,7 @@ function parseAdvancedPermalink(search = window.location.search) {
 const startupMapView = parseMapHash();
 const startupPermalink = parseAdvancedPermalink();
 const startupPrintAction = getStartupPrintAction();
+const startupParcelSearch = shouldOpenStartupParcelSearch();
 
 
 
@@ -5022,6 +5031,11 @@ function zoomToParcelFeature(feature) {
   showToast('Flurstück gefunden. Für die Auswahl anschließend auf die gewünschte Stelle im Flurstück klicken.');
 }
 
+async function openParcelSearch() {
+  if (!elements.parcelSearchDialog.open) elements.parcelSearchDialog.showModal();
+  if (!state.cadastralIndex) await initializeParcelSearch();
+}
+
 async function initializeParcelSearch() {
   elements.parcelSearchStatus.textContent = 'Katasterdaten werden geladen …';
   try {
@@ -5317,10 +5331,7 @@ for (const input of [elements.simpleShareDialogUrl, elements.simpleShareAutoUrl]
   input.addEventListener('focus', () => input.select());
   input.addEventListener('click', () => input.select());
 }
-elements.parcelSearchButton.addEventListener('click', async () => {
-  elements.parcelSearchDialog.showModal();
-  if (!state.cadastralIndex) await initializeParcelSearch();
-});
+elements.parcelSearchButton.addEventListener('click', openParcelSearch);
 elements.parcelOfficeSelect.addEventListener('change', () => {
   clearParcelDirectSearchOnManualSelection();
   handleParcelOfficeChange();
@@ -5347,6 +5358,7 @@ elements.parcelDirectInput.addEventListener('keydown', event => {
 });
 elements.simpleModeButton.addEventListener('click', () => applyAppMode(APP_MODE_SIMPLE));
 elements.advancedModeButton.addEventListener('click', () => applyAppMode(APP_MODE_ADVANCED));
+if (startupParcelSearch) openParcelSearch();
 elements.simpleExportDialog.addEventListener('cancel', event => {
   if (state.simpleExporting) event.preventDefault();
 });
