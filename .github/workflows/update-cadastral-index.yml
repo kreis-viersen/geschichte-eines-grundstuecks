@@ -19,7 +19,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gdal-bin jq
 
       - name: Build cadastral index
-        run: ./scripts/update-cadastral-index.sh
+        run: bash ./scripts/update-cadastral-index.sh
 
       - name: Commit changed data
         run: |
