@@ -1,19 +1,23 @@
-default:
-  image: node:24
+image: node:24
 
 stages:
-  - deploy
+  - test
 
-deploy-pages:
-  stage: deploy
-  script:
-    - npm ci
-    - npm run build
-    - test -s dist/index.html
+create-pages:
+  stage: test
+
   pages:
     publish: dist
+
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+  before_script:
+    - npm ci
+
+  script:
+    - npm run build
+    - test -s dist/index.html
 
 include:
   - remote: "https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/v1.13.0/templates/secret-scanning.yml"
