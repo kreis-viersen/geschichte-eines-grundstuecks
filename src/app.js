@@ -4079,7 +4079,7 @@ async function createKreisViersenImagePdfCanvas(assetUrl, pageNumber, pageCount,
       if (typeof drawable.close === 'function') drawable.close();
     }
   } catch (error) {
-    console.error(`${fallbackTitle} konnte nicht in das PDF eingebettet werden:`, error);
+    console.error('PDF-Asset konnte nicht in das PDF eingebettet werden:', fallbackTitle, error);
     context.fillStyle = '#f5f5f6';
     context.fillRect(120, 250, canvas.width - 240, 950);
     context.fillStyle = '#a12b2b';
