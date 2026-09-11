@@ -4348,12 +4348,13 @@ function addPdfNavigationLinks(pdf, navigation, exportLayerCount) {
 }
 
 function escapeQlrXml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&apos;',
+  })[character]);
 }
 
 function makeQgisLayerId(title, index, exportToken) {
