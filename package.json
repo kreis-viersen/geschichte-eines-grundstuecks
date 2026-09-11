@@ -22,7 +22,7 @@
     "@turf/boolean-point-in-polygon": "7.3.5",
     "jspdf": "4.2.1",
     "pdf-lib": "1.17.1",
-    "maplibre-gl": "6.1.0",
+    "maplibre-gl": "6.9.0",
     "proj4": "2.21.0",
     "@maplibre/maplibre-gl-geocoder": "1.9.4"
   },
