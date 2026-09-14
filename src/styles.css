@@ -44,6 +44,7 @@ button { cursor: pointer; }
 }
 .brand-mark img { width: 34px; height: 34px; display: block; }
 .app-header h1 { font-size: 1.05rem; line-height: 1.15; margin: 0; }
+.brand-byline { color: var(--primary); font-size: .72em; font-weight: 500; white-space: nowrap; }
 .app-header p { color: var(--muted); font-size: .78rem; margin: 3px 0 0; }
 .header-action { margin-left: 0; flex: 0 0 auto; }
 
@@ -1113,4 +1114,19 @@ body[data-app-mode="simple"] .intro-card {
   font-size: .85rem;
   font-weight: 600;
   padding-inline: 10px;
+}
+
+.opencode-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.opencode-link img {
+  display: block;
+  width: auto;
+  height: 18px;
+  transform: scale(1.25);
 }

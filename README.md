@@ -237,6 +237,8 @@ Der Quellcode steht unter der Lizenz **GPL-3.0-or-later**. Der vollständige Liz
 
 Die eingebundenen Geodaten unterliegen den jeweils angegebenen Nutzungsbedingungen. In der Anwendung und in den erzeugten PDF-Dateien werden die zugehörigen Quellen- und Lizenzhinweise ausgegeben. Die OpenStreetMap-Hintergrundkarte wird mit der Attribution **© OpenStreetMap-Mitwirkende · ODbL** verwendet.
 
+Das in der Anwendung verwendete openCode-Logo ist nicht Bestandteil dieser Lizenz. Die Verwendung des Logos erfolgt mit freundlicher Genehmigung von [openCode](https://opencode.de/) und unterliegt dem Markenrecht.
+
 ## Kontakt
 
 Fragen, Anmerkungen und Fehlermeldungen können per E-Mail an [open@kreis-viersen.de](mailto:open@kreis-viersen.de) gesendet werden.
