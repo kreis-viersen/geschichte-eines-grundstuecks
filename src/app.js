@@ -76,6 +76,9 @@ const PDF_KREIS_VIERSEN_APPENDIX_PAGE_COUNT = 4;
 const PDF_PAGE_WIDTH_MM = 297;
 const PDF_PAGE_HEIGHT_MM = 210;
 const OSM_TILE_SIZE = 256;
+const OSM_PRIMARY_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_FALLBACK_TILE_URL = 'https://gdi-niederrhein-geodienste.de/openstreetmap/{z}/{x}/{y}.png';
+const OSM_BLOCK_TEST_URL = 'https://tile.openstreetmap.org/6/38/19.png';
 const OSM_OVERVIEW_ZOOM = 12;
 const OSM_OVERVIEW_WIDTH = 1080;
 const OSM_OVERVIEW_HEIGHT = 760;
@@ -529,12 +532,36 @@ function getPermalinkLayerToken(layer) {
   return `${id}_${formatPermalinkOpacity(opacity)}`;
 }
 
+async function detectOsmTileUrl() {
+  try {
+    const response = await fetch(OSM_BLOCK_TEST_URL, { cache: 'no-store' });
+    const contentType = response.headers.get('content-type') ?? '';
+    const contentLength = response.headers.get('content-length') ?? '';
+    const cacheControl = response.headers.get('cache-control') ?? '';
+
+    if (
+      response.status === 200
+      && contentType === 'image/png'
+      && contentLength === '6987'
+      && cacheControl.includes('no-cache')
+    ) {
+      return OSM_FALLBACK_TILE_URL;
+    }
+  } catch {
+    return OSM_PRIMARY_TILE_URL;
+  }
+
+  return OSM_PRIMARY_TILE_URL;
+}
+
+const osmTileUrl = await detectOsmTileUrl();
+
 const osmStyle = () => ({
   version: 8,
   sources: {
     osm: {
       type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tiles: [osmTileUrl],
       tileSize: 256,
       maxzoom: 19,
       attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap-Mitwirkende · ODbL</a>'
@@ -3377,7 +3404,11 @@ async function fetchOsmOverviewTile(zoom, tileX, tileY) {
   const tileCount = 2 ** zoom;
   if (tileY < 0 || tileY >= tileCount) return null;
   const normalizedX = normalizeOsmTileX(tileX, zoom);
-  const response = await fetch(`https://tile.openstreetmap.org/${zoom}/${normalizedX}/${tileY}.png`, {
+  const tileUrl = osmTileUrl
+    .replace('{z}', zoom)
+    .replace('{x}', normalizedX)
+    .replace('{y}', tileY);
+  const response = await fetch(tileUrl, {
     headers: { Accept: 'image/png,image/*;q=0.9' }
   });
   const contentType = response.headers.get('content-type') ?? '';
