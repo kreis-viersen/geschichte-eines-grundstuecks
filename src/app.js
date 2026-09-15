@@ -35,6 +35,7 @@ const KREIS_VIERSEN_CONTACT_PHONE_URL = 'tel:+492162391130';
 const KREIS_VIERSEN_CONTACT_EMAIL_URL = 'mailto:katasteramt@kreis-viersen.de';
 const KREIS_VIERSEN_HISTORICAL_TRACE_URL = 'https://www.kreis-viersen.de/service/dienstleistungen/historische-rueckverfolgung';
 const WMS_BASE_URL = 'https://www.wms.nrw.de/geobasis';
+const HIST_DOP_1951_1969_ATTRIBUTION = 'Geobasis NRW, Hansa Luftbild AG, Landesarchiv NRW, Bestand RW 0230 · Datenlizenz Deutschland – Namensnennung – Version 2.0';
 const COVERAGE_NRW = 'nrw';
 const COVERAGE_KREIS_VIERSEN = 'kreis-viersen';
 const COVERAGE_URAUFNAHME = 'uraufnahme';
@@ -419,6 +420,17 @@ const hoverCoverageDefinitions = new Map([
 function getWmsService(serviceId) {
   return services.find(item => item.id === serviceId)
     ?? supplementalMapServices.find(item => item.id === serviceId);
+}
+
+function getHistoricalDopAttribution(layer) {
+  if (layer?.serviceId !== 'wms_nw_hist_dop') return null;
+  const year = Number(
+    layer.year
+    ?? String(layer.wmsLayer ?? '').match(/(\d{4})$/)?.[1]
+  );
+  return year >= 1951 && year <= 1969
+    ? HIST_DOP_1951_1969_ATTRIBUTION
+    : null;
 }
 
 // Permalinks verwenden bewusst kurze Alias-IDs. Die fachlichen/interne Layer-IDs
@@ -2572,7 +2584,7 @@ function installWmsLayer(layer) {
       type: 'raster',
       tiles: [tileUrl],
       tileSize: 256,
-      attribution: service.attribution ?? 'Geobasis NRW'
+      attribution: getHistoricalDopAttribution(layer) ?? service.attribution ?? 'Geobasis NRW'
     });
   }
   if (!map.getLayer(layer.layerId)) {
@@ -3213,7 +3225,8 @@ function createPageCanvas(wmsImage, layer, pageNumber, pageCount, geometry, expo
   }
 
   const service = getWmsService(layer.serviceId);
-  const footerSource = layer.pdfAttribution
+  const footerSource = getHistoricalDopAttribution(layer)
+    ?? layer.pdfAttribution
     ?? service?.pdfAttribution
     ?? 'Geobasis NRW · Datenlizenz Deutschland – Zero – Version 2.0';
   const footer = `${footerSource} · Seite ${pageNumber}/${pageCount}`;
