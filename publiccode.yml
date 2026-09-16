@@ -7,7 +7,7 @@ name: Die Geschichte eines Grundstücks
 url: 'https://gitlab.opencode.de/kreis-viersen/geschichte-eines-grundstuecks'
 softwareVersion: 2.2.58
 releaseDate: '2026-09-16'
-logo: logo-geschichte-eines-grundstuecks_opencode
+logo: logo-geschichte-eines-grundstuecks_opencode.png
 platforms:
   - web
 usedBy:
