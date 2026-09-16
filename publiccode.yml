@@ -1,0 +1,91 @@
+# This repository adheres to the publiccode.yml standard by including this
+# metadata file that makes public software easily discoverable.
+# More info at https://github.com/italia/publiccode.yml
+
+publiccodeYmlVersion: '0.2'
+name: Die Geschichte eines Grundstücks
+url: 'https://gitlab.opencode.de/kreis-viersen/geschichte-eines-grundstuecks'
+softwareVersion: 2.2.58
+releaseDate: '2026-09-16'
+logo: logo-geschichte-eines-grundstuecks_opencode
+platforms:
+  - web
+usedBy:
+  - Kreis Viersen
+categories:
+  - geographic-information-systems
+  - data-visualization
+developmentStatus: stable
+softwareType: standalone/web
+maintenance:
+  type: internal
+  contacts:
+    - name: Kreis Viersen - Amt für Kataster und Geoinformation
+      email: open@kreis-viersen.de
+legal:
+  license: GPL-3.0-or-later
+intendedAudience:
+  countries:
+    - de
+  scope:
+    - local-authorities
+    - society
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - de
+description:
+  de:
+    genericName: Geoinformationsanwendung
+    shortDescription: >
+      Webanwendung zur Recherche und PDF-Ausgabe historischer und aktueller
+      Karten, Luftbilder und Katasterinformationen in Nordrhein-Westfalen.
+    longDescription: |
+      **Webanwendung:** [https://kreis-viersen.usercontent.opencode.de/geschichte-eines-grundstuecks/](https://kreis-viersen.usercontent.opencode.de/geschichte-eines-grundstuecks/)
+
+      Die Geschichte eines Grundstücks ist eine browserbasierte Kartenanwendung,
+      mit der historische und aktuelle Karten, Luftbilder und Katasterinformationen
+      für einen ausgewählten Punkt in Nordrhein-Westfalen recherchiert und
+      miteinander verglichen werden können.
+
+      Nach der Auswahl eines Punktes auf der Karte ermittelt die Anwendung die
+      dort verfügbaren Inhalte. Dazu gehören historische und aktuelle
+      Orthophotos sowie verschiedene historische und amtliche Kartenwerke.
+      Im einfachen Modus kann daraus automatisch eine mehrseitige PDF im Format
+      A4 quer erstellt werden. Im erweiterten Modus lassen sich die verfügbaren
+      Inhalte gezielt auswählen und in ihrer Reihenfolge verändern.
+
+      Für die Orientierung stehen eine Adresssuche sowie eine NRW-weite
+      Flurstückssuche zur Verfügung. Flurstücke können über Katasteramt,
+      Gemarkung, Flur und Flurstück oder direkt über Gemarkungs- oder
+      Flurstückskennzeichen oder eine ALKIS-ID gesucht werden.
+
+      Die erzeugte PDF enthält neben den ausgewählten Karten und Luftbildern
+      eine Übersichtskarte, Maßstabsangaben und Quellenhinweise. Im erweiterten
+      Modus können die geladenen Inhalte zusätzlich als QGIS-Layerdefinition
+      (.qlr) exportiert und die aktuelle Kartenkonfiguration über einen
+      Permalink geteilt werden.
+
+      Die Anwendung ist vollständig webbasiert und kann ohne Installation im
+      Browser genutzt werden.
+    features:
+      - >-
+        Recherche historischer und aktueller Luftbilder für einen ausgewählten Punkt in Nordrhein-Westfalen
+      - >-
+        Darstellung historischer und aktueller Kartenwerke sowie Katasterinformationen
+      - >-
+        Automatische mehrseitige PDF-Ausgabe im Format A4 quer
+      - >-
+        Einfacher und erweiterter Modus für automatische beziehungsweise individuelle Kartenzusammenstellungen
+      - >-
+        Adresssuche innerhalb von Nordrhein-Westfalen
+      - >-
+        NRW-weite Flurstückssuche über Katasteramt, Gemarkung, Flur und Flurstück
+      - >-
+        Direktsuche nach Gemarkung-Flur-Flurstück, ALKIS-ID oder Flurstückskennzeichen
+      - >-
+        Export der geladenen Karten und Luftbilder als QGIS-Layerdefinition (.qlr)
+      - >-
+        Erstellung von Permalinks zum Teilen der aktuellen Kartenkonfiguration
+    screenshots:
+      - screenshots/screenshot_092026.png
