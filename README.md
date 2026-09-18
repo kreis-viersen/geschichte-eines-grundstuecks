@@ -1,5 +1,5 @@
 <p>
-  <img src="public/assets/logo-geschichte-eines-grundstuecks_opencode.png" alt="Logo Die Geschichte eines Grundstücks" width="180">
+  <img src="logo-geschichte-eines-grundstuecks_opencode.png" alt="Logo Die Geschichte eines Grundstücks" width="180">
 </p>
 
 # Die Geschichte eines Grundstücks
