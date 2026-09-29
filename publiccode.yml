@@ -5,7 +5,7 @@
 publiccodeYmlVersion: '0.2'
 name: Die Geschichte eines Grundstücks
 url: 'https://gitlab.opencode.de/kreis-viersen/geschichte-eines-grundstuecks'
-softwareVersion: 2.2.58
+softwareVersion: 2.3.0
 releaseDate: '2026-09-16'
 logo: logo-geschichte-eines-grundstuecks_opencode.png
 platforms:
@@ -23,7 +23,7 @@ maintenance:
     - name: Kreis Viersen - Amt für Kataster und Geoinformation
       email: open@kreis-viersen.de
 legal:
-  license: GPL-3.0-or-later
+  license: EUPL-1.2
 intendedAudience:
   countries:
     - de

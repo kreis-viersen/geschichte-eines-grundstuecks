@@ -233,7 +233,7 @@ Die Anwendung greift direkt auf externe WMS- und Suchdienste zu. Einzelne Inhalt
 
 ## Lizenz und Datenquellen
 
-Der Quellcode steht unter der Lizenz **GPL-3.0-or-later**. Der vollständige Lizenztext liegt in der Datei [`LICENSE`](LICENSE).
+Der Quellcode steht unter der **European Union Public Licence 1.2 (EUPL-1.2)**. Der vollständige Lizenztext liegt in der Datei [`LICENSE`](LICENSE).
 
 Die eingebundenen Geodaten unterliegen den jeweils angegebenen Nutzungsbedingungen. In der Anwendung und in den erzeugten PDF-Dateien werden die zugehörigen Quellen- und Lizenzhinweise ausgegeben. Die OpenStreetMap-Hintergrundkarte wird mit der Attribution **© OpenStreetMap-Mitwirkende · ODbL** verwendet.
 
