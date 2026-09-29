@@ -140,6 +140,8 @@ Liegt der Auswahlpunkt im Kreis Viersen, ergänzt die Anwendung weitere Seiten m
 - Kontaktinformationen des Amts für Kataster und Geoinformation
 - Link zur historischen Rückverfolgung
 
+[Musterprojekt Kreis Viersen (PDF)](https://opendata-kreis-viersen.de/histKarten/Geschichte%20eines%20Grundst%c3%bccks%20Muster%20Kreisarchiv.pdf)
+
 ## QGIS-Export
 
 Der Export **Für QGIS herunterladen (.qlr)** steht im erweiterten Modus zur Verfügung.
