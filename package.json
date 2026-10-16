@@ -19,15 +19,15 @@
     "core-js": false
   },
   "dependencies": {
-    "@turf/boolean-point-in-polygon": "7.3.5",
+    "@turf/boolean-point-in-polygon": "7.4.0",
     "jspdf": "4.2.1",
     "pdf-lib": "1.17.1",
-    "maplibre-gl": "6.11.0",
-    "proj4": "2.21.0",
+    "maplibre-gl": "6.14.0",
+    "proj4": "2.22.0",
     "@maplibre/maplibre-gl-geocoder": "1.9.4"
   },
   "devDependencies": {
     "rollup-license-plugin": "3.2.1",
-    "vite": "8.2.0"
+    "vite": "8.3.4"
   }
 }
